@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Waffle → Calendar</title>
+<meta name="theme-color" content="#0B1116">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href='data:application/manifest+json,{%22name%22:%22Waffle to Calendar%22,%22short_name%22:%22Waffle%22,%22display%22:%22standalone%22,%22background_color%22:%22#0B1116%22,%22theme_color%22:%22#0B1116%22,%22start_url%22:%22./%22}'>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#0B1116;
+  --panel:#131C23;
+  --panel-2:#182430;
+  --line:#25333F;
+  --ink:#E6EDF2;
+  --ink-dim:#8FA3B0;
+  --cyan:#54C8E8;
+  --green:#5FD48B;
+  --amber:#E8A94A;
+  --magenta:#E86FC8;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Roboto Mono",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:15px;
+  line-height:1.5;
+  padding:0 0 64px;
+  -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:840px;margin:0 auto;padding:0 16px}
+
+/* ---- header ---- */
+header{
+  border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg,#101A21,#0B1116);
+  padding:20px 0 16px;
+  margin-bottom:20px;
+}
+h1{
+  font-family:var(--mono);
+  font-size:19px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  margin:0 0 4px;
+  font-weight:600;
+}
+h1 span{color:var(--cyan)}
+.sub{color:var(--ink-dim);font-size:13px;margin:0}
+
+/* ---- panels ---- */
+section{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:16px;
+  margin-bottom:16px;
+}
+.eyebrow{
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--ink-dim);
+  margin:0 0 12px;
+}
+label{display:block;font-size:12px;color:var(--ink-dim);margin:0 0 5px;letter-spacing:.04em}
+select,input[type=number],input[type=text]{
+  width:100%;
+  background:var(--panel-2);
+  border:1px solid var(--line);
+  color:var(--ink);
+  font-family:var(--mono);
+  font-size:15px;
+  padding:10px 11px;
+  border-radius:7px;
+  appearance:none;
+}
+select:focus-visible,input:focus-visible,button:focus-visible,.drop:focus-visible{
+  outline:2px solid var(--cyan);outline-offset:2px;
+}
+.grid{display:grid;gap:12px;grid-template-columns:1fr 1fr}
+.grid.three{grid-template-columns:1fr 1fr 1fr}
+@media(max-width:560px){.grid,.grid.three{grid-template-columns:1fr}}
+
+/* ---- dropzone ---- */
+.drop{
+  border:1.5px dashed var(--line);
+  border-radius:10px;
+  padding:28px 18px;
+  text-align:center;
+  cursor:pointer;
+  background:var(--panel-2);
+  transition:border-color .15s,background .15s;
+}
+.drop:hover,.drop.hot{border-color:var(--cyan);background:#1B2A36}
+.drop .big{font-family:var(--mono);font-size:14px;letter-spacing:.06em}
+.drop .small{color:var(--ink-dim);font-size:12px;margin-top:6px}
+
+/* ---- toggles ---- */
+.checks{display:flex;flex-wrap:wrap;gap:14px;margin-top:4px}
+.chk{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink)}
+.chk input{width:17px;height:17px;accent-color:var(--cyan)}
+
+/* ---- buttons ---- */
+button{
+  font-family:var(--mono);
+  font-size:14px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  border:1px solid var(--line);
+  background:var(--panel-2);
+  color:var(--ink);
+  padding:13px 18px;
+  border-radius:8px;
+  cursor:pointer;
+}
+button:hover{border-color:var(--cyan)}
+button.primary{background:var(--cyan);color:#06131A;border-color:var(--cyan);font-weight:700}
+button.primary:hover{filter:brightness(1.08)}
+button[disabled]{opacity:.4;cursor:not-allowed}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap}
+.btnrow button{flex:1;min-width:150px}
+
+/* ---- strips ---- */
+.strip{
+  display:grid;
+  grid-template-columns:56px 1fr auto;
+  gap:12px;
+  align-items:center;
+  border-left:3px solid var(--line);
+  background:var(--panel-2);
+  border-radius:0 8px 8px 0;
+  padding:10px 12px;
+  margin-bottom:6px;
+}
+.strip.duty{border-left-color:var(--green)}
+.strip.allday{border-left-color:var(--amber)}
+.strip.off{border-left-color:#2E3E4A;opacity:.55}
+.dt{font-family:var(--mono);font-size:12px;color:var(--ink-dim);line-height:1.25}
+.dt b{display:block;font-size:17px;color:var(--ink);font-weight:600}
+.code{font-family:var(--mono);font-size:15px;letter-spacing:.03em}
+.meta{font-size:12px;color:var(--ink-dim);font-family:var(--mono);margin-top:2px}
+.tm{font-family:var(--mono);font-size:19px;color:var(--cyan);font-variant-numeric:tabular-nums}
+.tm.none{color:var(--ink-dim);font-size:13px}
+
+.tally{
+  display:flex;gap:18px;flex-wrap:wrap;
+  font-family:var(--mono);font-size:12px;color:var(--ink-dim);
+  border-top:1px solid var(--line);margin-top:12px;padding-top:12px;
+}
+.tally b{color:var(--ink);font-size:15px;display:block}
+
+.note{
+  font-size:12.5px;color:var(--ink-dim);
+  border-left:2px solid var(--amber);
+  padding:2px 0 2px 10px;margin:12px 0 0;
+}
+.err{color:var(--amber);font-family:var(--mono);font-size:13px}
+.hidden{display:none}
+ol.steps{margin:8px 0 0;padding-left:20px;font-size:13.5px;color:var(--ink-dim)}
+ol.steps li{margin-bottom:6px}
+ol.steps b{color:var(--ink);font-weight:600}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1>Waffle <span>→</span> Calendar</h1>
+    <p class="sub">Turn the monthly schedule workbook into calendar events. No retyping.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section>
+    <p class="eyebrow">1 · Schedule file</p>
+    <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose schedule file">
+      <div class="big" id="dropLabel">TAP TO CHOOSE · OR DROP .XLSX</div>
+      <div class="small" id="dropSub">Reads the WaffleSheet tab. Nothing leaves this device.</div>
+    </div>
+    <input type="file" id="file" accept=".xlsx,.xlsm,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" class="hidden">
+    <p class="err hidden" id="err"></p>
+  </section>
+
+  <section id="setup" class="hidden">
+    <p class="eyebrow">2 · Your line</p>
+    <div class="grid">
+      <div>
+        <label for="who">Name on the roster</label>
+        <select id="who"></select>
+      </div>
+      <div>
+        <label for="tz">Report times are in</label>
+        <select id="tz">
+          <option value="America/Chicago">Central — DFW</option>
+          <option value="America/New_York">Eastern — DCA / LGA / MIA</option>
+          <option value="America/Denver">Mountain</option>
+          <option value="America/Phoenix">Arizona (no DST)</option>
+          <option value="America/Los_Angeles">Pacific — LAX</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid" style="margin-top:12px">
+      <div>
+        <label>Event length</label>
+        <input type="text" value="6:00  ·  SF 5:30" disabled>
+      </div>
+      <div>
+        <label>Alerts</label>
+        <input type="text" value="45 &amp; 30 min  ·  WDAY 1630 prior" disabled>
+      </div>
+    </div>
+    <div class="checks" style="margin-top:14px">
+      <label class="chk"><input type="checkbox" id="incOff"> Include days off (R / L)</label>
+      <label class="chk"><input type="checkbox" id="incVac" checked> Include vacation (VC / VEX)</label>
+      <label class="chk"><input type="checkbox" id="incAllDay" checked> Include untimed duty as all-day</label>
+    </div>
+    <p class="note">Events run 6 hours from the report time, except SF, which runs 5:30. Timed events alert 45 and 30 minutes before; all-day events such as WDAY alert at 1630 the day before. Title comes from the event row, location from the room number.</p>
+  </section>
+
+  <section id="review" class="hidden">
+    <p class="eyebrow">3 · Check it against the sheet</p>
+    <div id="strips"></div>
+    <div class="tally" id="tally"></div>
+  </section>
+
+  <section id="push" class="hidden">
+    <p class="eyebrow">4 · Send to Google Calendar</p>
+    <div id="cidRow">
+      <label for="cid">OAuth client ID</label>
+      <input type="text" id="cid" placeholder="1234…apps.googleusercontent.com" autocomplete="off" spellcheck="false">
+      <p class="note">One-time setup in Google Cloud Console: enable the Calendar API, create an OAuth client ID of type <b>Web application</b>, and list this page's address under authorized JavaScript origins. Paste the ID here, or set <code>GOOGLE_CLIENT_ID</code> near the top of this file's script so it fills itself in.</p>
+    </div>
+    <div class="btnrow" style="margin-top:12px">
+      <button id="connect">Connect Google</button>
+    </div>
+    <div id="calRow" class="hidden" style="margin-top:14px">
+      <label for="cal">Write to calendar</label>
+      <select id="cal"></select>
+      <div class="btnrow" style="margin-top:12px">
+        <button class="primary" id="send">Add events</button>
+      </div>
+    </div>
+    <p class="err hidden" id="perr"></p>
+    <p id="plog" class="note hidden"></p>
+  </section>
+
+  <section id="out" class="hidden">
+    <p class="eyebrow">5 · Or take the file</p>
+    <div class="btnrow">
+      <button id="dl">Download .ics</button>
+      <button id="copy">Copy as text</button>
+    </div>
+    <ol class="steps">
+      <li>On a computer, open <b>calendar.google.com</b> → gear icon → <b>Settings</b> → <b>Import &amp; export</b>.</li>
+      <li>Pick the downloaded file, choose which calendar receives it, then <b>Import</b>.</li>
+      <li>Either route uses the same fixed event ID built from your employee number and the date, so next month's run updates existing entries instead of doubling them.</li>
+    </ol>
+  </section>
+
+</div>
+
+<script>
+"use strict";
+
+const OFF_RE = /^[RL]\s*[-/]?\s*\d*$/i;
+const VAC = new Set(["VC","VEX"]);
+/* Pre-selected when the roster contains it — change to whoever owns this copy. */
+const DEFAULT_NAME = "Timok";
+/* The client ID is public by design — it is visible in every OAuth request.
+   The client secret is NOT, and this app does not use one: the browser token
+   flow authorises against the ID plus the authorised-origins list alone. */
+const GOOGLE_CLIENT_ID = "756248523028-spl681bgoivn41mba3amkek544u007fb.apps.googleusercontent.com";
+const $ = id => document.getElementById(id);
+let ROSTER = [], MONTH = "";
+
+/* ---------------- file intake ---------------- */
+$("drop").addEventListener("click", () => $("file").click());
+$("drop").addEventListener("keydown", e => { if(e.key==="Enter"||e.key===" "){e.preventDefault();$("file").click();} });
+$("drop").addEventListener("dragover", e => { e.preventDefault(); $("drop").classList.add("hot"); });
+$("drop").addEventListener("dragleave", () => $("drop").classList.remove("hot"));
+$("drop").addEventListener("drop", e => {
+  e.preventDefault(); $("drop").classList.remove("hot");
+  if (e.dataTransfer.files[0]) load(e.dataTransfer.files[0]);
+});
+$("file").addEventListener("change", e => { if (e.target.files[0]) load(e.target.files[0]); });
+
+function fail(msg){
+  $("err").textContent = msg;
+  $("err").classList.remove("hidden");
+}
+
+function load(file){
+  $("err").classList.add("hidden");
+  const fr = new FileReader();
+  fr.onload = ev => {
+    try {
+      const wb = XLSX.read(new Uint8Array(ev.target.result), {type:"array", cellDates:true});
+      ROSTER = parseWorkbook(wb);
+      if (!ROSTER.length) return fail("No roster blocks found. Is this the schedule workbook with the WaffleSheet tab?");
+      $("dropLabel").textContent = file.name.toUpperCase();
+      $("dropSub").textContent = ROSTER.length + " people · " + MONTH;
+      const who = $("who");
+      who.innerHTML = "";
+      ROSTER.slice().sort((a,b)=>a.name.localeCompare(b.name)).forEach(p => {
+        const o = document.createElement("option");
+        o.value = p.id; o.textContent = p.name;
+        who.appendChild(o);
+      });
+      const mine = Array.from(who.options).find(o => o.textContent.toLowerCase().includes(DEFAULT_NAME.toLowerCase()));
+      if (mine) who.value = mine.value;
+      $("setup").classList.remove("hidden");
+      $("review").classList.remove("hidden");
+      $("out").classList.remove("hidden");
+      $("push").classList.remove("hidden");
+      render();
+    } catch (e) {
+      fail("Couldn't read that file: " + e.message);
+    }
+  };
+  fr.onerror = () => fail("Couldn't read that file.");
+  fr.readAsArrayBuffer(file);
+}
+
+/* ---------------- parsing ---------------- */
+function parseWorkbook(wb){
+  let sheet = wb.Sheets["WaffleSheet"];
+  if (!sheet) {
+    for (const n of wb.SheetNames) {
+      const s = wb.Sheets[n];
+      const rows = XLSX.utils.sheet_to_json(s, {header:1, raw:true, blankrows:true});
+      if (rows[0] && String(rows[0][0]).trim().toLowerCase() === "name" && rows[0][1] instanceof Date) { sheet = s; break; }
+    }
+  }
+  if (!sheet) throw new Error("no schedule tab found");
+
+  const rows = XLSX.utils.sheet_to_json(sheet, {header:1, raw:true, blankrows:true, defval:null});
+
+  /* The date row is whichever row first carries three or more real dates.
+     That way a file trimmed down to one person still parses, as long as
+     the row of dates came along with it. */
+  let headRow = -1, dates = [];
+  for (let r = 0; r < Math.min(rows.length, 12); r++) {
+    const d = [];
+    let hits = 0;
+    for (let c = 1; c < (rows[r] || []).length; c++) {
+      d[c] = toDate(rows[r][c]);
+      if (d[c]) hits++;
+    }
+    if (hits >= 3) { headRow = r; dates = d; break; }
+  }
+  if (headRow < 0) throw new Error("no row of dates found \u2014 keep the date header row in the file");
+
+  const spanFrom = dates.find(Boolean);
+  const spanTo = dates.filter(Boolean).pop();
+  MONTH = spanFrom.toLocaleDateString(undefined,{month:"short",day:"numeric"}) + " \u2013 " +
+          spanTo.toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});
+
+  const people = [];
+  for (let r = headRow + 1; r + 2 < rows.length; r++) {
+    const nameCell = rows[r] && rows[r][0];
+    if (typeof nameCell !== "string" || !/^[A-Za-z].*,/.test(nameCell.trim())) continue;
+    const idCell = String((rows[r+1] && rows[r+1][0]) || "").trim();
+    const person = {
+      name: nameCell.trim(),
+      id: idCell.split("-")[0] || nameCell.replace(/\W/g,""),
+      badge: idCell,
+      qual: String((rows[r+2] && rows[r+2][0]) || "").trim(),
+      days: []
+    };
+    for (let c = 1; c < dates.length; c++) {
+      if (!dates[c]) continue;
+      const act = clean(rows[r] && rows[r][c]);
+      const asg = clean(rows[r+1] && rows[r+1][c]);
+      const tim = clean(rows[r+2] && rows[r+2][c]);
+      if (!act && !asg && !tim) continue;
+      person.days.push({date:dates[c], act, asg, time:parseTime(tim), rawTime:tim, kind:classify(asg, act, tim)});
+    }
+    r += 3;
+    people.push(person);
+  }
+  return people;
+}
+
+/* Header cells arrive as Date objects, Excel serial numbers, or text
+   depending on how the workbook was saved. Accept all three. */
+function toDate(v){
+  if (v === null || v === undefined || v === "") return null;
+  let d = null;
+  if (typeof v === "object" && typeof v.getFullYear === "function") {
+    d = v;
+  } else if (typeof v === "number" && v > 20000 && v < 80000) {
+    d = new Date(Date.UTC(1899, 11, 30) + Math.round(v) * 86400000);
+    return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  } else if (typeof v === "string") {
+    const t = Date.parse(v.trim());
+    if (isNaN(t)) return null;
+    d = new Date(t);
+  }
+  if (!d || isNaN(d.getTime())) return null;
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function clean(v){
+  if (v === null || v === undefined) return "";
+  const s = String(v).trim().replace(/\s+/g," ");
+  return s === "NaN" ? "" : s;
+}
+
+function parseTime(t){
+  if (!t) return null;
+  const m = /^(\d{1,2}):?(\d{2})$/.exec(t.replace(/\s/g,""));
+  if (!m) return null;
+  const h = +m[1], min = +m[2];
+  if (h > 23 || min > 59) return null;
+  return {h, m:min};
+}
+
+function classify(asg, act, tim){
+  if (VAC.has(asg.toUpperCase())) return "vac";
+  if (asg && OFF_RE.test(asg) && !act && !tim) return "off";
+  if (parseTime(tim)) return "duty";
+  if (act || (asg && !OFF_RE.test(asg))) return "allday";
+  return "off";
+}
+
+/* ---------------- rendering ---------------- */
+["who","incOff","incVac","incAllDay","tz"].forEach(id =>
+  $(id).addEventListener("input", render));
+
+function selected(){ return ROSTER.find(p => p.id === $("who").value); }
+
+function wanted(d){
+  if (d.kind === "off") return $("incOff").checked;
+  if (d.kind === "vac") return $("incVac").checked;
+  if (d.kind === "allday") return $("incAllDay").checked;
+  return true;
+}
+
+function title(d){
+  if (d.act) return d.act;
+  if (d.kind === "vac") return d.asg.toUpperCase() === "VEX" ? "Vacation (ext)" : "Vacation";
+  if (d.kind === "off") return "Day off \u00b7 " + d.asg;
+  return d.asg || "Duty";
+}
+
+/* The room number, but only when the cell holds a room — not a day-off or vacation code. */
+function room(d){
+  if (!d.asg || OFF_RE.test(d.asg) || VAC.has(d.asg.toUpperCase())) return "";
+  return d.asg;
+}
+
+/* SF runs 5:30; everything else 6:00. */
+function hours(d){
+  return /(^|[^A-Z])SF([^A-Z]|$)/i.test(d.act || "") ? 5.5 : 6;
+}
+
+function render(){
+  const p = selected();
+  if (!p) return;
+  const box = $("strips");
+  box.innerHTML = "";
+  let duty = 0, off = 0, allday = 0;
+  p.days.forEach(d => {
+    if (d.kind === "duty") duty++; else if (d.kind === "allday") allday++; else off++;
+    if (!wanted(d)) return;
+    const el = document.createElement("div");
+    el.className = "strip " + (d.kind === "duty" ? "duty" : d.kind === "allday" ? "allday" : "off");
+    el.innerHTML =
+      '<div class="dt">' + d.date.toLocaleDateString(undefined,{weekday:"short"}).toUpperCase() +
+        '<b>' + d.date.getDate() + '</b></div>' +
+      '<div><div class="code">' + esc(title(d)) + '</div>' +
+        '<div class="meta">' + esc([d.asg, p.badge].filter(Boolean).join("  ·  ")) + '</div></div>' +
+      (d.time
+        ? '<div class="tm">' + pad(d.time.h) + pad(d.time.m) + '</div>'
+        : '<div class="tm none">all day</div>');
+    box.appendChild(el);
+  });
+  $("tally").innerHTML =
+    '<div><b>' + duty + '</b>timed duty days</div>' +
+    '<div><b>' + allday + '</b>untimed entries</div>' +
+    '<div><b>' + off + '</b>off / vacation</div>' +
+    '<div><b>' + p.days.filter(wanted).length + '</b>events to add</div>';
+}
+
+const esc = s => String(s).replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const pad = n => String(n).padStart(2,"0");
+
+/* ---------------- event shape (shared by the file and the API) ---------------- */
+/* Google event IDs accept only a-v and 0-9, so the prefix avoids w-z. */
+const eventId = (p, d) => "sked" + p.id.replace(/[^0-9a-v]/gi,"") + ymd(d.date);
+
+function endTime(d){
+  const t = new Date(d.date.getFullYear(), d.date.getMonth(), d.date.getDate(), d.time.h, d.time.m);
+  return new Date(t.getTime() + hours(d) * 3600e3);
+}
+/* Timed events alert 45 and 30 minutes out. All-day events alert 1630 the day
+   before, which is 450 minutes before midnight. */
+const reminders = d => d.time ? [45, 30] : [450];
+
+/* ---------------- ICS ---------------- */
+const TZ_OFFSETS = {
+  "America/Chicago":     {std:"-0600", dst:"-0500", stdName:"CST", dstName:"CDT"},
+  "America/New_York":    {std:"-0500", dst:"-0400", stdName:"EST", dstName:"EDT"},
+  "America/Denver":      {std:"-0700", dst:"-0600", stdName:"MST", dstName:"MDT"},
+  "America/Los_Angeles": {std:"-0800", dst:"-0700", stdName:"PST", dstName:"PDT"},
+  "America/Phoenix":     null
+};
+
+function vtimezone(tz){
+  const o = TZ_OFFSETS[tz];
+  if (!o) return [
+    "BEGIN:VTIMEZONE","TZID:America/Phoenix",
+    "BEGIN:STANDARD","DTSTART:19700101T000000","TZOFFSETFROM:-0700","TZOFFSETTO:-0700","TZNAME:MST","END:STANDARD",
+    "END:VTIMEZONE"];
+  return [
+    "BEGIN:VTIMEZONE","TZID:" + tz,
+    "BEGIN:DAYLIGHT","DTSTART:19700308T020000","RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU",
+      "TZOFFSETFROM:" + o.std,"TZOFFSETTO:" + o.dst,"TZNAME:" + o.dstName,"END:DAYLIGHT",
+    "BEGIN:STANDARD","DTSTART:19701101T020000","RRULE:FREQ=YEARLY;BYMONTH=11;BYDAY=1SU",
+      "TZOFFSETFROM:" + o.dst,"TZOFFSETTO:" + o.std,"TZNAME:" + o.stdName,"END:STANDARD",
+    "END:VTIMEZONE"];
+}
+
+const ymd = d => d.getFullYear() + pad(d.getMonth()+1) + pad(d.getDate());
+
+function fold(line){
+  if (line.length <= 74) return line;
+  let out = line.slice(0,74), rest = line.slice(74);
+  while (rest.length > 73){ out += "\r\n " + rest.slice(0,73); rest = rest.slice(73); }
+  return out + "\r\n " + rest;
+}
+const escText = s => String(s).replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,").replace(/\n/g,"\\n");
+
+function buildICS(){
+  const p = selected(), tz = $("tz").value;
+  const stamp = new Date().toISOString().replace(/[-:]/g,"").split(".")[0] + "Z";
+  const seq = Math.floor(Date.now()/1000) % 100000;
+
+  const L = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//waffle-to-calendar//EN",
+             "CALSCALE:GREGORIAN","METHOD:PUBLISH"].concat(vtimezone(tz));
+
+  p.days.filter(wanted).forEach(d => {
+    const uid = eventId(p, d) + "@waffle-schedule";
+    const ev = ["BEGIN:VEVENT","UID:" + uid,"DTSTAMP:" + stamp,"SEQUENCE:" + seq];
+    if (d.time){
+      const start = ymd(d.date) + "T" + pad(d.time.h) + pad(d.time.m) + "00";
+      const e = endTime(d);
+      ev.push("DTSTART;TZID=" + tz + ":" + start);
+      ev.push("DTEND;TZID=" + tz + ":" + ymd(e) + "T" + pad(e.getHours()) + pad(e.getMinutes()) + "00");
+    } else {
+      const nxt = new Date(d.date.getFullYear(), d.date.getMonth(), d.date.getDate()+1);
+      ev.push("DTSTART;VALUE=DATE:" + ymd(d.date));
+      ev.push("DTEND;VALUE=DATE:" + ymd(nxt));
+    }
+    ev.push("SUMMARY:" + escText(title(d)));
+    if (room(d)) ev.push("LOCATION:" + escText(room(d)));
+    const desc = [
+      d.act ? "Activity: " + d.act : null,
+      d.asg ? "Assignment: " + d.asg : null,
+      d.rawTime ? "Report: " + d.rawTime : null,
+      "Roster: " + p.name + " (" + p.badge + ")",
+      d.time ? "Ends " + hours(d).toFixed(2).replace(".50",":30").replace(".00",":00") + " after report" : null
+    ].filter(Boolean).join("\n");
+    ev.push("DESCRIPTION:" + escText(desc));
+    ev.push("TRANSP:" + (d.kind === "off" ? "TRANSPARENT" : "OPAQUE"));
+    reminders(d).forEach(m => ev.push("BEGIN:VALARM","ACTION:DISPLAY",
+      "DESCRIPTION:" + escText(title(d)), "TRIGGER:-PT" + m + "M", "END:VALARM"));
+    ev.push("END:VEVENT");
+    ev.forEach(l => L.push(l));
+  });
+
+  L.push("END:VCALENDAR");
+  return L.map(fold).join("\r\n");
+}
+
+
+/* ---------------- Google Calendar ---------------- */
+let TOKEN = null, tokenClient = null;
+
+if (GOOGLE_CLIENT_ID) $("cid").value = GOOGLE_CLIENT_ID;
+
+function pfail(msg){ $("perr").textContent = msg; $("perr").classList.remove("hidden"); }
+function plog(msg){ const e = $("plog"); e.textContent = msg; e.classList.remove("hidden"); }
+
+function loadGIS(){
+  if (window.google && google.accounts) return Promise.resolve();
+  return new Promise((ok, no) => {
+    const sc = document.createElement("script");
+    sc.src = "https://accounts.google.com/gsi/client";
+    sc.onload = ok;
+    sc.onerror = () => no(new Error("Google's sign-in script didn't load. This page has to be served over http or https \u2014 opening the file directly won't work."));
+    document.head.appendChild(sc);
+  });
+}
+
+$("connect").addEventListener("click", async () => {
+  $("perr").classList.add("hidden");
+  const id = $("cid").value.trim();
+  if (!id) return pfail("Paste your OAuth client ID first.");
+  try { await loadGIS(); } catch(e){ return pfail(e.message); }
+  try {
+    tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: id,
+      scope: "https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly",
+      callback: async resp => {
+        if (resp.error) return pfail("Google refused the sign-in: " + resp.error);
+        TOKEN = resp.access_token;
+        $("connect").textContent = "Reconnect";
+        await listCalendars();
+      }
+    });
+    tokenClient.requestAccessToken({prompt: TOKEN ? "" : "consent"});
+  } catch(e){ pfail(e.message); }
+});
+
+async function api(path, opts){
+  const r = await fetch("https://www.googleapis.com/calendar/v3" + path, Object.assign({
+    headers: {Authorization: "Bearer " + TOKEN, "Content-Type": "application/json"}
+  }, opts));
+  return r;
+}
+
+async function listCalendars(){
+  const r = await api("/users/me/calendarList?minAccessRole=writer");
+  if (!r.ok) return pfail("Couldn't read your calendar list (" + r.status + ").");
+  const data = await r.json();
+  const sel = $("cal");
+  sel.innerHTML = "";
+  (data.items || []).forEach(c => {
+    const o = document.createElement("option");
+    o.value = c.id;
+    o.textContent = c.summary + (c.primary ? "  (main)" : "");
+    if (c.primary) o.selected = true;
+    sel.appendChild(o);
+  });
+  $("calRow").classList.remove("hidden");
+}
+
+function payload(p, d, tz){
+  const body = {
+    id: eventId(p, d),
+    summary: title(d),
+    description: [
+      d.act ? "Activity: " + d.act : null,
+      d.asg ? "Assignment: " + d.asg : null,
+      d.rawTime ? "Report: " + d.rawTime : null,
+      "Roster: " + p.name + " (" + p.badge + ")"
+    ].filter(Boolean).join("\n"),
+    transparency: d.kind === "off" ? "transparent" : "opaque",
+    reminders: {useDefault:false, overrides: reminders(d).map(m => ({method:"popup", minutes:m}))}
+  };
+  if (room(d)) body.location = room(d);
+  if (d.time){
+    const e = endTime(d);
+    body.start = {dateTime: iso(d.date, d.time.h, d.time.m), timeZone: tz};
+    body.end   = {dateTime: iso(e, e.getHours(), e.getMinutes()), timeZone: tz};
+  } else {
+    const nxt = new Date(d.date.getFullYear(), d.date.getMonth(), d.date.getDate()+1);
+    body.start = {date: dash(d.date)};
+    body.end   = {date: dash(nxt)};
+  }
+  return body;
+}
+const dash = d => d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate());
+const iso = (d, h, m) => dash(d) + "T" + pad(h) + ":" + pad(m) + ":00";
+
+$("send").addEventListener("click", async () => {
+  if (!TOKEN) return pfail("Connect to Google first.");
+  $("perr").classList.add("hidden");
+  const p = selected(), tz = $("tz").value, cal = encodeURIComponent($("cal").value);
+  const days = p.days.filter(wanted);
+  $("send").disabled = true;
+  let done = 0, failed = 0;
+  for (const d of days){
+    const body = payload(p, d, tz);
+    plog("Writing " + (done + failed + 1) + " of " + days.length + "\u2026");
+    try {
+      /* Same ID every month, so an update lands on the existing entry.
+         404 means it isn't there yet, in which case create it. */
+      let r = await api("/calendars/" + cal + "/events/" + body.id, {method:"PUT", body: JSON.stringify(body)});
+      if (r.status === 404 || r.status === 400){
+        r = await api("/calendars/" + cal + "/events", {method:"POST", body: JSON.stringify(body)});
+      }
+      if (r.ok) done++; else { failed++; if (failed === 1) pfail("Google rejected an event (" + r.status + "): " + (await r.text()).slice(0,160)); }
+    } catch(e){ failed++; }
+  }
+  $("send").disabled = false;
+  plog(done + " event" + (done === 1 ? "" : "s") + " written to " + $("cal").options[$("cal").selectedIndex].textContent.trim() +
+       (failed ? " \u00b7 " + failed + " failed" : " \u00b7 re-run any time to update them"));
+});
+
+$("dl").addEventListener("click", () => {
+  const p = selected();
+  const blob = new Blob([buildICS()], {type:"text/calendar;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = p.name.replace(/[^A-Za-z]/g,"") + "-schedule.ics";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+});
+
+$("copy").addEventListener("click", async () => {
+  const p = selected();
+  const text = p.days.filter(wanted).map(d =>
+    d.date.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"}) + "  " +
+    (d.time ? pad(d.time.h)+pad(d.time.m) : "----") + "  " + title(d)
+  ).join("\n");
+  try { await navigator.clipboard.writeText(text); $("copy").textContent = "Copied"; }
+  catch { $("copy").textContent = "Copy failed"; }
+  setTimeout(() => $("copy").textContent = "Copy as text", 1800);
+});
+</script>
+</body>
+</html>
