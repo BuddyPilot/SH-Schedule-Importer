@@ -6,7 +6,7 @@
 <title>Waffle → Calendar</title>
 <meta name="theme-color" content="#0B1116">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href='data:application/manifest+json,{%22name%22:%22Waffle to Calendar%22,%22short_name%22:%22Waffle%22,%22display%22:%22standalone%22,%22background_color%22:%22#0B1116%22,%22theme_color%22:%22#0B1116%22,%22start_url%22:%22./%22}'>
+<link rel="manifest" href='data:application/manifest+json,{%22name%22:%22Waffle to Calendar%22,%22short_name%22:%22Waffle%22,%22display%22:%22standalone%22,%22background_color%22:%22#0B1116%22,%22theme_color%22:%22#0B1116%22}'>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
@@ -276,10 +276,14 @@ const OFF_RE = /^[RL]\s*[-/]?\s*\d*$/i;
 const VAC = new Set(["VC","VEX"]);
 /* Pre-selected when the roster contains it — change to whoever owns this copy. */
 const DEFAULT_NAME = "Timok";
-/* No client ID is stored in this file, so it is safe to hand out. Yours travels
-   in the address instead: bookmark the page with #client=YOUR-ID.apps.googleusercontent.com
-   on the end and the field below fills itself. */
-const GOOGLE_CLIENT_ID = (location.hash.match(/client=([^&]+)/) || [])[1] || "";
+/* The client ID is public by design — it travels in every OAuth request and is
+   readable in any browser's network tab. What actually restricts its use is the
+   authorised-origins list on the Cloud project, not secrecy. Anyone opening this
+   page authorises against their own Google account; nothing about your login is
+   stored here. A #client=… fragment in the address overrides it. */
+const GOOGLE_CLIENT_ID =
+  (location.hash.match(/client=([^&]+)/) || [])[1] ||
+  "756248523028-spl681bgoivn41mba3amkek544u007fb.apps.googleusercontent.com";
 const $ = id => document.getElementById(id);
 let ROSTER = [], MONTH = "";
 
