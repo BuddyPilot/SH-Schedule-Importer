@@ -729,7 +729,7 @@ $("connect").addEventListener("click", async () => {
   try {
     tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: id,
-      scope: "https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly",
+      scope: "https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.calendarlist.readonly",
       callback: async resp => {
         if (resp.error) return pfail("Google refused the sign-in: " + resp.error);
         TOKEN = resp.access_token;
