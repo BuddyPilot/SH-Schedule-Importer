@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>About · SH Sked</title>
+<title>About · Schoolhouse Schedule to Calendar</title>
 <meta name="theme-color" content="#0B1116">
 <style>
 :root{--bg:#0B1116;--panel:#131C23;--line:#25333F;--ink:#E6EDF2;--ink-dim:#8FA3B0;--cyan:#54C8E8;
@@ -24,13 +24,59 @@ li{margin-bottom:7px}
 .dim{color:var(--ink-dim);font-size:14px}
 nav{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin-top:34px;border-top:1px solid var(--line);padding-top:16px}
 nav a{margin-right:18px}
+.hidden{display:none}
+:root{--panel-2:#182430}
+/* --- site header: home icon, title link, menu --- */
+.bar{display:flex;align-items:center;gap:12px}
+.home,.burger{
+  flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+  width:40px;height:40px;border-radius:9px;
+  border:1px solid var(--line);background:var(--panel-2);
+  color:var(--ink);cursor:pointer;padding:0;
+}
+.home:hover,.burger:hover{border-color:var(--cyan)}
+.home svg,.burger svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.titles{flex:1 1 auto;min-width:0}
+a.brand{text-decoration:none;color:inherit;display:inline-block}
+a.brand:hover h1 span{color:var(--ink)}
+menu.menu{
+  list-style:none;margin:14px 0 0;padding:6px;
+  background:var(--panel);border:1px solid var(--line);border-radius:10px;
+}
+menu.menu li{margin:0}
+menu.menu a{
+  display:block;padding:11px 13px;border-radius:7px;
+  color:var(--ink);text-decoration:none;
+  font-family:var(--mono);font-size:13px;letter-spacing:.06em;
+}
+menu.menu a:hover{background:var(--panel-2)}
+menu.menu a[aria-current="page"]{color:var(--cyan)}
 </style>
 </head>
 <body>
-<header><div class="wrap"><h1>SH <span>→</span> Sked</h1></div></header>
+<header>
+  <div class="wrap">
+    <div class="bar">
+      <a class="home" href="./" aria-label="Home">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.75 20v-6h4.5v6"/></svg>
+      </a>
+      <div class="titles">
+        <a class="brand" href="./"><h1>Schoolhouse Schedule <span>→</span> Calendar</h1></a>
+      </div>
+      <button class="burger" id="burger" aria-label="Menu" aria-expanded="false" aria-controls="menu">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/></svg>
+      </button>
+    </div>
+    <menu class="menu hidden" id="menu">
+      <li><a href="./" >Schedule Importer</a></li>
+      <li><a href="about.html" aria-current="page">About</a></li>
+      <li><a href="privacy.html">Privacy Policy</a></li>
+    </menu>
+  </div>
+</header>
 <div class="wrap">
 
-<p>SH Sked turns a monthly crew scheduling workbook into events on your
+<p>Schoolhouse Schedule to Calendar turns a monthly crew scheduling workbook into events on your
 own Google Calendar. It was built for 737 flight instructors who otherwise copy each
 month's assignments across by hand.</p>
 
@@ -66,11 +112,36 @@ the list of calendar names.</p>
 <h2>Contact</h2>
 <p>Questions or problems: <a href="mailto:TimokJA@gmail.com">TimokJA@gmail.com</a></p>
 
-<nav>
-  <a href="./">Open the app</a>
-  <a href="about.html">About</a>
-  <a href="privacy.html">Privacy</a>
-</nav>
 </div>
+<script>
+"use strict";
+/* --- header menu --- */
+(function(){
+  const b = document.getElementById("burger"), m = document.getElementById("menu");
+  const shut = () => { m.classList.add("hidden"); b.setAttribute("aria-expanded","false"); };
+  b.addEventListener("click", e => {
+    e.stopPropagation();
+    const open = m.classList.toggle("hidden") === false;
+    b.setAttribute("aria-expanded", String(open));
+  });
+  document.addEventListener("click", e => { if (!m.contains(e.target)) shut(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") shut(); });
+})();
+
+const OFF_RE = /^[RL]\s*[-/]?\s*\d*$/i;
+const VAC = new Set(["VC","VEX"]);
+/* Pre-selected when the roster contains it — change to whoever owns this copy. */
+const DEFAULT_NAME = "Timok";
+/* The client ID is public by design — it travels in every OAuth request and is
+   readable in any browser's network tab. What actually restricts its use is the
+   authorised-origins list on the Cloud project, not secrecy. Anyone opening this
+   page authorises against their own Google account; nothing about your login is
+   stored here. A #client=… fragment in the address overrides it. */
+const GOOGLE_CLIENT_ID =
+  (location.hash.match(/client=([^&]+)/) || [])[1] ||
+  "756248523028-spl681bgoivn41mba3amkek544u007fb.apps.googleusercontent.com";
+const $ = id => document.getElementById(id);
+let ROSTER = [], MONTH = "";
+</script>
 </body>
 </html>
