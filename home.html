@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SHSked.com — copy your monthly schoolhouse schedule to Google Calendar</title>
+<meta name="description" content="SHSked.com is a free web app that copies a flight instructor's monthly work schedule onto their own Google Calendar. It requests Google Calendar access solely to create and update those schedule events.">
+<meta name="theme-color" content="#131313">
+<style>
+:root{--bg:#131313;--panel:#1B242C;--line:#36495a;--ink:#d0dae0;--ink-dim:#9da6ab;--cyan:#4db4fa;
+--mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6;padding:0 0 64px;-webkit-text-size-adjust:100%}
+.wrap{max-width:720px;margin:0 auto;padding:0 18px}
+header{border-bottom:1px solid var(--line);background:linear-gradient(180deg,#182633,#131313);padding:22px 0;margin-bottom:26px}
+h1{font-family:var(--mono);font-size:19px;letter-spacing:.13em;text-transform:uppercase;margin:0;font-weight:600}
+h1 span{color:var(--cyan)}
+h2{font-family:var(--mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-dim);margin:30px 0 10px;font-weight:600}
+p{margin:0 0 14px}
+a{color:var(--cyan)}
+ul{margin:0 0 14px;padding-left:22px}
+li{margin-bottom:7px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin-bottom:18px}
+.dim{color:var(--ink-dim);font-size:14px}
+nav{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin-top:34px;border-top:1px solid var(--line);padding-top:16px}
+nav a{margin-right:18px}
+.hidden{display:none}
+:root{--panel-2:#22303B}
+/* --- site header: home icon, title link, menu --- */
+.bar{display:flex;align-items:center;gap:12px}
+.home,.burger{
+  flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+  width:40px;height:40px;border-radius:9px;
+  border:1px solid var(--line);background:var(--panel-2);
+  color:var(--ink);cursor:pointer;padding:0;
+}
+.home:hover,.burger:hover{border-color:var(--cyan)}
+.home svg,.burger svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.titles{flex:1 1 auto;min-width:0}
+a.brand{text-decoration:none;color:inherit;display:inline-block}
+a.brand:hover h1 span{color:var(--ink)}
+menu.menu{
+  list-style:none;margin:14px 0 0;padding:6px;
+  background:var(--panel);border:1px solid var(--line);border-radius:10px;
+}
+menu.menu li{margin:0}
+menu.menu a{
+  display:block;padding:11px 13px;border-radius:7px;
+  color:var(--ink);text-decoration:none;
+  font-family:var(--mono);font-size:13px;letter-spacing:.06em;
+}
+menu.menu a:hover{background:var(--panel-2)}
+menu.menu a[aria-current="page"]{color:var(--cyan)}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="bar">
+      <a class="home" href="./" aria-label="Home">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.75 20v-6h4.5v6"/></svg>
+      </a>
+      <div class="titles">
+        <a class="brand" href="./"><h1>SHSked<span>.com</span></h1></a>
+      </div>
+      <button class="burger" id="burger" aria-label="Menu" aria-expanded="false" aria-controls="menu">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/></svg>
+      </button>
+    </div>
+    <menu class="menu hidden" id="menu">
+      <li><a href="./" >Schedule Importer</a></li>
+      <li><a href="about.html" aria-current="page">About</a></li>
+      <li><a href="privacy.html">Privacy Policy</a></li>
+    </menu>
+  </div>
+</header>
+<div class="wrap">
+
+
+<div class="card" style="border-color:var(--cyan)">
+  <p style="margin:0 0 10px;font-size:18px"><b>SHSked.com</b></p>
+  <p style="margin:0 0 10px">SHSked.com is a free web application that copies a flight
+    instructor's monthly work schedule from a spreadsheet onto their own Google Calendar.</p>
+  <p style="margin:0 0 10px">SHSked.com requests access to your Google Calendar for one
+    purpose: to create and update the schedule events you ask it to create. It does not
+    collect, store, transmit or share any user data, and it has no server.</p>
+  <p style="margin:0">Privacy policy:
+    <a href="https://shsked.com/privacy.html"><b>https://shsked.com/privacy.html</b></a></p>
+</div>
+
+<h2>What SHSked.com is</h2>
+<p><b>SHSked.com</b> is a free web app that copies a CKP-X or IP's monthly work schedule
+onto their own Google Calendar.</p>
+
+<p>Instructor/Evaluators on a Schoolhouse assignment receive next month's events as a
+spreadsheet from Schoolhouse Scheduling on the 15th of the month prior. Each
+Instructor/Evaluator's line shows which event they teach on which day, in which room, and
+what time to report. Copying that onto a calendar by hand is slow and easy to get wrong —
+a mistyped report time means missing an event.</p>
+
+<p>SHSked.com reads that spreadsheet, finds your line on it, and writes the month's
+assignments to a Google Calendar you choose, with the event title, room number, report
+time and reminders already set. Run it again next month and it updates the existing
+entries rather than creating duplicates.</p>
+
+<div class="card">
+<h2 style="margin-top:0">What it does</h2>
+<ul>
+  <li>Reads the monthly schedule spreadsheet and finds your line on it.</li>
+  <li>Shows every event it found so you can check it against the sheet before anything is written.</li>
+  <li>Writes those events to a calendar you choose, with the report time, room number, and reminders already set.</li>
+  <li>Re-running next month updates the existing entries rather than creating duplicates.</li>
+</ul>
+</div>
+
+<div class="card">
+<h2 style="margin-top:0">How it works</h2>
+<p>Everything happens in your browser. The spreadsheet is read on your own device and
+never uploaded anywhere. There is no server, no database, and no account to create.</p>
+<p>When you connect your Google account, the app receives a temporary access token that
+lives in the browser tab and is discarded when you close it. Nothing about your Google
+account is stored.</p>
+</div>
+
+<div class="card">
+<h2 style="margin-top:0">Why SHSked.com requests access to your Google Calendar</h2>
+<p>SHSked.com asks for permission to your Google Calendar for one reason: to put your
+schedule on it. Access is requested only when you choose to sign in, and is used only for
+the actions described here.</p>
+<ul>
+  <li><b>See and edit events on your calendars</b> — requested so the app can create the
+      schedule events you asked it to create, and update them the following month rather
+      than duplicating them. The app writes only the events shown to you on screen before
+      you press the button.</li>
+  <li><b>See a list of your calendars</b> — requested so the app can show you the names
+      of your calendars and let you choose which one receives the events. Nothing else is
+      read.</li>
+</ul>
+<p>The app does not read the contents of your existing calendar events, does not access
+any other Google service, and does not use your data for advertising, analytics, training
+models, or any purpose besides writing the schedule you asked for. No user data is sold
+or shared with anyone.</p>
+<p class="dim">You can withdraw this access at any time at
+<a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>.</p>
+</div>
+
+<h2>Contact</h2>
+<p>Questions or problems: <a href="mailto:TimokJA@gmail.com">TimokJA@gmail.com</a></p>
+
+
+<div class="card" style="border-color:var(--cyan)">
+  <h2 style="margin-top:0">Privacy</h2>
+  <p style="margin:0 0 8px">SHSked.com does not collect, transmit or store any user data.
+    The full policy explains what the app accesses and why.</p>
+  <p style="margin:0"><a href="https://shsked.com/privacy.html"><b>SHSked.com Privacy Policy</b></a></p>
+</div>
+
+<nav style="font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin-top:30px;border-top:1px solid var(--line);padding-top:16px">
+  <a href="https://shsked.com/" style="margin-right:18px">Schedule Importer</a>
+  <a href="https://shsked.com/about.html" style="margin-right:18px">About</a>
+  <a href="https://shsked.com/privacy.html">Privacy Policy</a>
+</nav>
+</div>
+<script>
+"use strict";
+/* --- header menu --- */
+(function(){
+  const b = document.getElementById("burger"), m = document.getElementById("menu");
+  const shut = () => { m.classList.add("hidden"); b.setAttribute("aria-expanded","false"); };
+  b.addEventListener("click", e => {
+    e.stopPropagation();
+    const open = m.classList.toggle("hidden") === false;
+    b.setAttribute("aria-expanded", String(open));
+  });
+  document.addEventListener("click", e => { if (!m.contains(e.target)) shut(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") shut(); });
+})();
+
+const OFF_RE = /^[RL]\s*[-/]?\s*\d*$/i;
+const VAC = new Set(["VC","VEX"]);
+/* Pre-selected when the roster contains it — change to whoever owns this copy. */
+const DEFAULT_NAME = "Timok";
+/* The client ID is public by design — it travels in every OAuth request and is
+   readable in any browser's network tab. What actually restricts its use is the
+   authorised-origins list on the Cloud project, not secrecy. Anyone opening this
+   page authorises against their own Google account; nothing about your login is
+   stored here. A #client=… fragment in the address overrides it. */
+const GOOGLE_CLIENT_ID =
+  (location.hash.match(/client=([^&]+)/) || [])[1] ||
+  "756248523028-spl681bgoivn41mba3amkek544u007fb.apps.googleusercontent.com";
+const $ = id => document.getElementById(id);
+let ROSTER = [], MONTH = "";
+</script>
+</body>
+</html>
