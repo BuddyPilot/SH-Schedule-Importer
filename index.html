@@ -215,10 +215,8 @@ menu.menu a[aria-current="page"]{color:var(--cyan)}
       <li><a href="about.html">About</a></li>
       <li><a href="privacy.html">Privacy Policy</a></li>
     </menu>
-    <p class="sub" style="margin-top:12px"><b>SHSked.com</b> copies your monthly schoolhouse
-      schedule onto your own Google Calendar — report times, room numbers and reminders
-      included. The spreadsheet is read here in your browser and never uploaded.
-      <a href="about.html" style="color:var(--cyan)">More about this app</a>.</p>
+    <p class="sub" style="margin-top:12px">Your monthly schoolhouse schedule, on your
+      Google Calendar.</p>
   </div>
 </header>
 
@@ -278,7 +276,7 @@ menu.menu a[aria-current="page"]{color:var(--cyan)}
 
   <section id="push" class="hidden">
     <p class="eyebrow">4 · Send to Google Calendar</p>
-    <div id="cidRow">
+    <div id="cidRow" class="hidden">
       <label for="cid">OAuth client ID</label>
       <input type="text" id="cid" placeholder="1234…apps.googleusercontent.com" autocomplete="off" spellcheck="false">
       <p class="note">One-time setup in Google Cloud Console: enable the Calendar API, create an OAuth client ID of type <b>Web application</b>, and list this page's address under authorized JavaScript origins. Paste the ID here, or set <code>GOOGLE_CLIENT_ID</code> near the top of this file's script so it fills itself in.</p>
@@ -308,6 +306,27 @@ menu.menu a[aria-current="page"]{color:var(--cyan)}
       <li>Pick the downloaded file, choose which calendar receives it, then <b>Import</b>.</li>
       <li>Either route uses the same fixed event ID built from your employee number and the date, so next month's run updates existing entries instead of doubling them.</li>
     </ol>
+  </section>
+
+  <section>
+    <h2 style="font-size:17px;margin:0 0 10px">About SHSked.com</h2>
+    <p style="margin:0 0 12px"><b>SHSked.com</b> is a free web app that copies a CKP-X or
+      IP's monthly work schedule onto their own Google Calendar.</p>
+    <p style="margin:0 0 12px">Instructor/Evaluators on a Schoolhouse assignment receive
+      next month's events as a spreadsheet from Schoolhouse Scheduling on the 15th of the
+      month prior. Each Instructor/Evaluator's line shows which event they teach on which
+      day, in which room, and what time to report. Copying that onto a calendar by hand is
+      slow and easy to get wrong — a mistyped report time means missing an event.
+      <span class="sub">(Ask me how I know! — Buddy)</span></p>
+    <p style="margin:0 0 12px">SHSked.com reads that spreadsheet, finds your line on it,
+      and writes the month's assignments to a Google Calendar you choose, with the event
+      title, room number, report time and reminders already set. Run it again next month
+      and it updates the existing entries rather than creating duplicates.</p>
+    <p style="margin:0" class="sub">The spreadsheet is read in your browser and is never
+      uploaded. There is no server housing your data and no account to create to use this
+      app.<br>
+      <a href="about.html" style="color:var(--cyan)">More about this app</a> ·
+      <a href="privacy.html" style="color:var(--cyan)">Privacy policy</a></p>
   </section>
 
 </div>
@@ -679,10 +698,8 @@ let TOKEN = null, tokenClient = null;
 
 /* When the ID rides in on the address there is nothing to ask for, so the
    field goes away. Without one, it shows so a new user can paste their own. */
-if (GOOGLE_CLIENT_ID){
-  $("cid").value = GOOGLE_CLIENT_ID;
-  $("cidRow").classList.add("hidden");
-}
+if (GOOGLE_CLIENT_ID) $("cid").value = GOOGLE_CLIENT_ID;
+else $("cidRow").classList.remove("hidden");
 
 function pfail(msg){ $("perr").textContent = msg; $("perr").classList.remove("hidden"); }
 function plog(msg){ const e = $("plog"); e.textContent = msg; e.classList.remove("hidden"); }
